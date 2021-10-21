@@ -1,9 +1,10 @@
 ---
 title: "totalTime & Performance Analysis"
 author: "Yu-An Chen"
-date: "10/15/2021"
+date: "10/21/2021"
 output: html_document
 ---
+# {.tabset}
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -21,7 +22,8 @@ library(tidyr)
 library(stringr)
 library(readr)
 ```
-# Performance Formatting and Matching
+
+## Performance Formatting and Matching
 Reading and Removing unnecessary variables 
 ```{r}
 df <- read.csv("SocialSp21.csv")
@@ -179,7 +181,7 @@ TimeS21 <- dropMissingTime(TimeS21, PerfS21)
 
 ```
 
-## Marking Time outliers 
+## Removing outliers
 ```{r}
 exclude_outliers <- function(condData, destData){
   Q1 <- quantile(condData$totalTime, .25)
@@ -247,8 +249,7 @@ TimeS21 <- exclude_outliers(text, TimeS21)
 
 ```
 
-
-## Marking performance outliers 
+Marking performance outliers 
 ```{r}
 get_upper <- function(dfcondition){
     Q1 <- quantile(dfcondition, .25)
@@ -297,7 +298,7 @@ PerfS20 <- remove_outliers(PerfS20, get_upper(PerfS20$baseline), get_lower(PerfS
 PerfS21 <- remove_outliers(PerfS21, get_upper(PerfS21$Baseline), get_lower(PerfS21$Baseline), get_upper(PerfS21$Text), get_lower(PerfS21$Text),  get_upper(PerfS21$POE), get_lower(PerfS21$POE))
 ```
 
-## Extracting outlier-removed datasets for both time and performance 
+Extracting outlier-removed datasets for both time and performance 
 ```{r}
 cleanTime <- function(timedata, perfdata){
   timedata$overallOutlier <- 0
@@ -376,7 +377,7 @@ TimePlotS21
 
 ```
 
-## Time Significance testing: Creating difference from baseline values
+## Time tests: Difference From Baseline
 ```{r}
 
 baseline_diff <- function(input, condA){
@@ -405,7 +406,7 @@ TimeS21_cleaned <- baseline_diff(TimeS21_cleaned, "Baseline")
 
 ```
 
-# Time: Plots of difference from baseline
+Plots of difference from baseline
 ```{r}
 TimeDiffPlot <- function(input, condA, condB, sem){
   a <- subset(input, condition == condA)
@@ -425,7 +426,7 @@ TimeDiffPlot(TimeS20_cleaned, "POE", "Text", "(Spring 2020)")
 TimeDiffPlot(TimeS21_cleaned, "POE", "Text", "(Spring 2021)")
 ```
 
-# Time: Paired T-tests
+## Time: Paired T-tests & LMER
 ```{r}
 ttest <- function(input, condA, condB){
   first <- subset(input, condition == condA)
@@ -438,12 +439,6 @@ ttest(TimeF19_cleaned, "POE", "POMC")
 ttest(TimeS19_cleaned, "POE", "Text")
 ttest(TimeS20_cleaned, "POE", "Text")
 ttest(TimeS21_cleaned, "POE", "Text")
-
-
-```
-
-# Time: Relevant LMER models
-```{r}
 
 lmerModel <- function(input, refcond){
   return(lmer(totalTime ~ condition + (1|AnonID), data = input))
@@ -481,7 +476,7 @@ ttestExtended(TimeS20_cleaned, "POE", "Text")
 ```
 
 
-## Performance 
+## Performance: Preparing Data
 
 To prepare the data so that it becomes an acceptable df for the violin plots, we will transform the data from wide into long form. Also note that we're setting factor_key to TRUE in our gather function so that we can re-level our reference conditions in the later LMER tests.
 ```{r}
@@ -538,8 +533,7 @@ S21Violin <- ggplot(PerfS21long,aes(x=condition, y = zscore, color = condition))
 S21Violin
 ```
 
-## Performance: Creating Results
-
+**Z-score difference From Mean**
 To find out how many z-scores away from the mean each condition results for the students, we will take the average of the z-scores in each condition for each semester
 
 ```{r}
@@ -658,7 +652,7 @@ diffPlotS20
 diffPlotS21
 ```
 
-## Performance: Paired t-tests
+## Performance: Paired t-tests & Condition LMER
 
 Below are the summaries of the paired t-tests. None of the performance differences are significant at the alpha = 0.05 level.
 ```{r}
@@ -668,8 +662,6 @@ t.test(PerfS19_cleaned$diffFromBase1, PerfS19_cleaned$diffFromBase2, paired = TR
 t.test(PerfS20_cleaned$diffFromBase1, PerfS20_cleaned$diffFromBase2, paired = TRUE, alternative = "two.sided")
 t.test(PerfS21_cleaned$diffFromBase1, PerfS21_cleaned$diffFromBase2, paired = TRUE, alternative = "two.sided")
 ```
-
-## Performance: Condition LMER
 Now for further analysis, we will run a linear mixed-effect model on the differences between the differences from the baseline conditions. To do this, we will need to apply the new changes to our long data format and remove the baseline conditions so our comparison can be made on the differences from the baseline.
 ```{r}
 
@@ -855,7 +847,7 @@ perfPlotS20
 perfPlotS21
 ```
 
-## T-tests: Gain per minute
+## Gain per minute: T-tests & LMER
 Now we will see if the gains per minute are significantly different between the conditions
 
 ```{r}
@@ -899,10 +891,7 @@ control <- subset(PerfS21long, condition == "Text")
 experimental <- subset(PerfS21long, condition == "POE")
 t.test(control$gain_diff, experimental$gain_diff, paired = TRUE, alternative = "two.sided")
 
-```
 
-# Gain Per Min: LMER
-```{r}
 PerfF18long <- remove_base(PerfF18long, "Text")
 PerfF19long <- remove_base(PerfF19long, "Text.Only")
 PerfS19long <- remove_base(PerfS19long, "Baseline")
@@ -927,24 +916,12 @@ summary(S20lmer_gain)
 
 S21lmer_gain <- lmer(gain_diff ~ condition + (1 |Student), data= PerfS21long)
 summary(S21lmer_gain)
-
-
 ```
 
 
-# Gain per Sentence Analysis:
+## Gain per Sentence Analysis:
 Reading files and creating dataframes that can take in sentence lengths.
 ```{r}
-S19Groups <- read.csv("19S_Groups.csv")
-names(S19Groups)[1] = "Student"
-
-S20Groups <- read.csv("20S_Groups.csv")[c(1,4)]
-names(S20Groups)[1] = "Student"
-
-S21Groups <- read.csv("spring2021_groupAssignment.csv")
-names(S21Groups)[1] = "Student"
-
-
 nsentences <- function(df){
   return(str_count(df, "\\. ") + str_count(df, "\\? ") + str_count(df, "\\! "))
 }
@@ -961,37 +938,31 @@ PerfF18long <- gather_to_long(PerfF18_cleaned, "PO", "POE", "Text")[c(1,14,15)]
 
 Assigning sentence lengths to each student. 
 ```{r}
+add_elements <- function(df, Doc1, Doc2, i){
+    df$ReadLen[i] <- nsentences(Doc1) + nsentences(Doc2)
+    df$sent_gain_per_len[i] <- df$zscore[i]/df$ReadLen[i] 
+    df$totalWords[i] <- lengths(gregexpr("\\W+", Doc1)) + 1 + lengths(gregexpr("\\W+", Doc2)) + 1
+    df$word_gain_per_len[i] <- df$zscore[i]/df$totalWords[i]
+    return(df)
+}
+
+
 assign_lengths <- function(df, AB1, AB2, A3, B3, A4, B4, A5, B5, A6, B6, baseline, control , experimental){
   for (i in 1:nrow(df)){
     if (df$condition[i] == baseline){
-      df$ReadLen[i] <- nsentences(AB1) + nsentences(AB2)
-      df$totalWords[i] <- lengths(gregexpr("\\W+", AB1)) + 1 + lengths(gregexpr("\\W+", AB2)) + 1
-      df$sent_gain_per_len[i] <- df$zscore[i]/df$ReadLen[i] 
-      df$word_gain_per_len[i] <- df$zscore[i]/df$totalWords[i]
+      df<- add_elements(df, AB1, AB2, i)
     }
     else if(df$condition[i] == control & df$Group[i] == "A"){
-      df$ReadLen[i] <- nsentences(A3) + nsentences(A4)
-      df$sent_gain_per_len[i] <- df$zscore[i]/df$ReadLen[i] 
-      df$totalWords[i] <- lengths(gregexpr("\\W+", A3)) + 1 + lengths(gregexpr("\\W+", A4)) + 1
-      df$word_gain_per_len[i] <- df$zscore[i]/df$totalWords[i]
+      df<- add_elements(df, A3, A4, i)
     }
     else if (df$condition[i] == control & df$Group[i] == "B"){
-      df$ReadLen[i] <- nsentences(B5) + nsentences(B6)
-      df$sent_gain_per_len[i] <- df$zscore[i]/df$ReadLen[i] 
-      df$totalWords[i] <- lengths(gregexpr("\\W+", B5)) + 1 + lengths(gregexpr("\\W+", B6)) + 1
-      df$word_gain_per_len[i] <- df$zscore[i]/df$totalWords[i]
+      df<- add_elements(df, B5, B6, i)
     }
     else if(df$condition[i] == experimental & df$Group[i] == "A"){
-      df$ReadLen[i] <- nsentences(A5) + nsentences(A6)
-      df$sent_gain_per_len[i] <- df$zscore[i]/df$ReadLen[i] 
-      df$totalWords[i] <- lengths(gregexpr("\\W+", A5)) + 1 + lengths(gregexpr("\\W+", A6)) + 1
-      df$word_gain_per_len[i] <- df$zscore[i]/df$totalWords[i]
+      df<- add_elements(df, A5, A6, i)
     }
     else if (df$condition[i] == experimental & df$Group[i] == "B"){
-      df$ReadLen[i] <- nsentences(B3) + nsentences(B4)
-      df$sent_gain_per_len[i] <- df$zscore[i]/df$ReadLen[i] 
-      df$totalWords[i] <- lengths(gregexpr("\\W+", B3)) + 1 + lengths(gregexpr("\\W+", B4)) + 1
-      df$word_gain_per_len[i] <- df$zscore[i]/df$totalWords[i]
+      df<- add_elements(df, B3, B4, i)
     }
   }
   df$sent_diff_from_baseline <- 0
@@ -1000,6 +971,7 @@ assign_lengths <- function(df, AB1, AB2, A3, B3, A4, B4, A5, B5, A6, B6, baselin
     if(df$condition[j] == control | df$condition[j] == experimental){
       baselineGain <- df$sent_gain_per_len[which(df$Student == df$Student[j] & df$condition == baseline)]
       df$sent_diff_from_baseline[j] = baselineGain - df$sent_gain_per_len[j]
+      
       baselineGain <- df$word_gain_per_len[which(df$Student == df$Student[j] & df$condition == baseline)]
       df$word_diff_from_baseline[j] = baselineGain - df$word_gain_per_len[j]
       
@@ -1007,7 +979,179 @@ assign_lengths <- function(df, AB1, AB2, A3, B3, A4, B4, A5, B5, A6, B6, baselin
   }
   return(df)
 }
+
+assign_lengths_many <- function(df, EF1, EF2, AD3, AD4, BC5, BC6, CD1, CD2, BF3, BF4, AE5, AE6, AB1, AB2, CE3, CE4, DF5, DF6, PO_POMC, baseline, experimental){
+  for(i in 1:nrow(df)){
+    if(df$condition[i] == PO_POMC){
+      if(df$Group[i] == "E" | df$Group[i] == "F"){
+        df<- add_elements(df, EF1, EF2, i)
+      }
+      else if (df$Group[i] == "A" | df$Group[i] == "D"){
+        df<- add_elements(df, AD3, AD4, i)
+      }
+      else{
+        df<- add_elements(df, BC5, BC6, i)
+      }
+    }
+    else if(df$condition[i] == baseline){
+      if(df$Group[i] == "C" | df$Group[i] == "D"){
+        df<- add_elements(df, CD1, CD2, i)
+      }
+      else if (df$Group[i] == "B" | df$Group[i] == "F"){
+        df<- add_elements(df, BF3, BF4, i)
+      }
+      else{
+        df<- add_elements(df, AE5, AE6, i)
+      }
+    }
+    else{
+      if(df$Group[i] == "A" | df$Group[i] == "B"){
+        df<- add_elements(df, AB1, AB2, i)
+      }
+      else if (df$Group[i] == "C" | df$Group[i] == "E"){
+        df<- add_elements(df, CE3, CE4, i)
+      }
+      else{
+        df<- add_elements(df, DF5, DF6, i)
+      }
+    }
+  }
+  return(df)
+}
 ```
+
+
+Fall 2018
+```{r}
+W_F18POMC1EF <- read_file("W_F19POMC1EF.txt")
+W_F18POMC2EF <- read_file("W_F19POMC2EF.txt")
+W_F18POMC3AD <- read_file("W_F19POMC3AD.txt")
+W_F18POMC4AD <- read_file("W_F19POMC4AD.txt")
+W_F18POMC5BC <- read_file("W_F19POMC5BC.txt")
+W_F18POMC6BC <- read_file("W_F19POMC6BC.txt")
+
+W_F18Text1CD <- read_file("W_F19Text1CD.txt")
+W_F18Text2CD <- read_file("W_F19Text2CD.txt")
+W_F18Text3BF <- read_file("W_F19Text3BF.txt")
+W_F18Text4BF <- read_file("W_F19Text4BF.txt")
+W_F18Text5AE <- read_file("W_F19Text5AE.txt")
+W_F18Text6AE <- read_file("W_F19Text6AE.txt")
+
+W_F18Exp1AB <- read_file("W_F19Exp1AB.txt")
+W_F18Exp2AB <- read_file("W_F19Exp2AB.txt")
+W_F18Exp3CE <- read_file("W_F19Exp3CE.txt")
+W_F18Exp4CE <- read_file("W_F19Exp4CE.txt")
+W_F18Exp5DF <- read_file("W_F19Exp5DF.txt")
+W_F18Exp6DF <- read_file("W_F19Exp6DF.txt")
+
+
+PerfF18long <- gather_to_long(PerfF18_cleaned, "PO", "POE", "Text")[c(1,14,15)]
+
+F18Groups <- read.csv("18F_Groups.csv")
+names(F18Groups)[1] <- "Student"
+names(F18Groups)[2] <- "Group"
+
+for (i in 1:nrow(F18Groups)){
+  if(F18Groups$Group[i] == "31549"){
+    F18Groups$Group[i] <- "A"
+  }
+  else if(F18Groups$Group[i] == "37526"){
+    F18Groups$Group[i] <- "B"
+  }
+  else if(F18Groups$Group[i] == "32001"){
+    F18Groups$Group[i] <- "C"
+  }
+  else if(F18Groups$Group[i] == "24807"){
+    F18Groups$Group[i] <- "D"
+  }
+  else if(F18Groups$Group[i] == "87862"){
+    F18Groups$Group[i] <- "E"
+  }
+  else{
+    F18Groups$Group[i] <- "F"
+  }
+}
+
+PerfF18long <- merge(PerfF18long, F18Groups)
+
+PerfF18long <- assign_lengths_many(PerfF18long, W_F18POMC1EF, W_F18POMC2EF, W_F18POMC3AD, W_F18POMC4AD, W_F18POMC5BC, W_F18POMC6BC, W_F18Text1CD, W_F18Text2CD, W_F18Text3BF, W_F18Text4BF, W_F18Text5AE, W_F18Text6AE, W_F18Exp1AB, W_F18Exp2AB, W_F18Exp3CE, W_F18Exp4CE, W_F18Exp5DF, W_F18Exp6DF, "PO", "Text", "POE")
+
+ggplot(data= data.frame(Type = c("Text","PO", "POE"), Avg = c(mean(subset(PerfF18long, condition == "Text")$sent_gain_per_len), mean(subset(PerfF18long, condition == "PO")$sent_gain_per_len), mean(subset(PerfF18long, condition == "POE")$sent_gain_per_len))), aes(x=Type, y=Avg)) +
+  geom_col(width = 0.6)+ labs(y="gain per sentence", x = "Group",
+              title = "Z-score gain per sentence, Fall 2018")
+
+ggplot(data= data.frame(Type = c("Text","PO", "POE"), Avg = c(mean(subset(PerfF18long, condition == "Text")$word_gain_per_len), mean(subset(PerfF18long, condition == "PO")$word_gain_per_len), mean(subset(PerfF18long, condition == "POE")$word_gain_per_len))), aes(x=Type, y=Avg)) +
+  geom_col(width = 0.6)+ labs(y="gain per sentence", x = "Group",
+              title = "Z-score gain per word, Fall 2018")
+
+summary(aov(sent_gain_per_len ~ condition, data = PerfF18long))
+sent_gain_plot <- TukeyHSD(aov(sent_gain_per_len ~ condition, data = PerfF18long))
+plot(sent_gain_plot)
+
+summary(aov(word_gain_per_len ~ condition, data = PerfF18long))
+word_gain_plot <- TukeyHSD(aov(word_gain_per_len ~ condition, data = PerfF18long))
+plot(word_gain_plot)
+
+```
+
+
+Fall 2019
+```{r}
+W_F19POMC1EF <- read_file("W_F19POMC1EF.txt")
+W_F19POMC2EF <- read_file("W_F19POMC2EF.txt")
+W_F19POMC3AD <- read_file("W_F19POMC3AD.txt")
+W_F19POMC4AD <- read_file("W_F19POMC4AD.txt")
+W_F19POMC5BC <- read_file("W_F19POMC5BC.txt")
+W_F19POMC6BC <- read_file("W_F19POMC6BC.txt")
+
+W_F19Text1CD <- read_file("W_F19Text1CD.txt")
+W_F19Text2CD <- read_file("W_F19Text2CD.txt")
+W_F19Text3BF <- read_file("W_F19Text3BF.txt")
+W_F19Text4BF <- read_file("W_F19Text4BF.txt")
+W_F19Text5AE <- read_file("W_F19Text5AE.txt")
+W_F19Text6AE <- read_file("W_F19Text6AE.txt")
+
+W_F19Exp1AB <- read_file("W_F19Exp1AB.txt")
+W_F19Exp2AB <- read_file("W_F19Exp2AB.txt")
+W_F19Exp3CE <- read_file("W_F19Exp3CE.txt")
+W_F19Exp4CE <- read_file("W_F19Exp4CE.txt")
+W_F19Exp5DF <- read_file("W_F19Exp5DF.txt")
+W_F19Exp6DF <- read_file("W_F19Exp6DF.txt")
+
+
+names(PerfF19_cleaned)[2] <- "POMC"
+names(PerfF19_cleaned)[4] <- "Text"
+PerfF19long <- gather_to_long(PerfF19_cleaned, "POMC", "POE", "Text")[c(1,9,10)]
+
+F19Groups <- read.csv("19F_Groups.csv")
+names(F19Groups)[1] <- "Student"
+names(F19Groups)[2] <- "Group"
+for (i in 1:nrow(F19Groups)){
+  F19Groups$Group[i] <- toupper(F19Groups$Group[i])
+}
+
+PerfF19long <- merge(PerfF19long, F19Groups)
+
+PerfF19long <- assign_lengths_many(PerfF19long, W_F19POMC1EF, W_F19POMC2EF, W_F19POMC3AD, W_F19POMC4AD, W_F19POMC5BC, W_F19POMC6BC, W_F19Text1CD, W_F19Text2CD, W_F19Text3BF, W_F19Text4BF, W_F19Text5AE, W_F19Text6AE, W_F19Exp1AB, W_F19Exp2AB, W_F19Exp3CE, W_F19Exp4CE, W_F19Exp5DF, W_F19Exp6DF, "POMC", "Text", "POE")
+
+ggplot(data= data.frame(Type = c("Text","POMC", "POE"), Avg = c(mean(subset(PerfF19long, condition == "Text")$sent_gain_per_len), mean(subset(PerfF19long, condition == "POMC")$sent_gain_per_len), mean(subset(PerfF19long, condition == "POE")$sent_gain_per_len))), aes(x=Type, y=Avg)) +
+  geom_col(width = 0.6)+ labs(y="gain per sentence", x = "Group",
+              title = "Z-score gain per sentence, Fall 2019")
+
+ggplot(data= data.frame(Type = c("Text","POMC", "POE"), Avg = c(mean(subset(PerfF19long, condition == "Text")$word_gain_per_len), mean(subset(PerfF19long, condition == "POMC")$word_gain_per_len), mean(subset(PerfF19long, condition == "POE")$word_gain_per_len))), aes(x=Type, y=Avg)) +
+  geom_col(width = 0.6)+ labs(y="gain per sentence", x = "Group",
+              title = "Z-score gain per word, Fall 2019")
+
+summary(aov(sent_gain_per_len ~ condition, data = PerfF19long))
+sent_gain_plot <- TukeyHSD(aov(sent_gain_per_len ~ condition, data = PerfF19long))
+plot(sent_gain_plot)
+
+summary(aov(word_gain_per_len ~ condition, data = PerfF19long))
+word_gain_plot <- TukeyHSD(aov(word_gain_per_len ~ condition, data = PerfF19long))
+plot(word_gain_plot)
+
+```
+
 
 Spring 2019
 Note: S2019 and S2020 used the same documents for Baseline, POE, and Text. So we will load in the same text files for these two semesters. 
@@ -1024,6 +1168,9 @@ W_S19Exp3B <- read_file("W_S20Exp3B.txt")
 W_S19Exp4B <- read_file("W_S20Exp4B.txt")
 W_S19Exp5A <- read_file("W_S20Exp5A.txt")
 W_S19Exp6A <- read_file("W_S20Exp6A.txt")
+
+S19Groups <- read.csv("19S_Groups.csv")
+names(S19Groups)[1] = "Student"
 
 PerfS19long <- merge(gather_to_long(PerfS19_cleaned, "Baseline", "Control", "Experimental")[c(1,8,9)], S19Groups)
 
@@ -1073,7 +1220,8 @@ W_S20Exp4B <- read_file("W_S20Exp4B.txt")
 W_S20Exp5A <- read_file("W_S20Exp5A.txt")
 W_S20Exp6A <- read_file("W_S20Exp6A.txt")
 
-
+S20Groups <- read.csv("20S_Groups.csv")[c(1,4)]
+names(S20Groups)[1] = "Student"
 
 PerfS20long <- merge(gather_to_long(PerfS20, "baseline", "control", "experimental"), S20Groups)[c(1,6,7,8)]
 
@@ -1112,6 +1260,9 @@ W_S21Exp4B <- read_file("W_S21Exp4B.txt")
 W_S21Exp5A <- read_file("W_S21Exp5A.txt")
 W_S21Exp6A <- read_file("W_S21Exp6A.txt")
 
+S21Groups <- read.csv("spring2021_groupAssignment.csv")
+names(S21Groups)[1] = "Student"
+
 PerfS21long <- merge(gather_to_long(PerfS21_cleaned, "Baseline", "Text", "POE")[c(1,7,8)], S21Groups)
 
 for (i in 1:nrow(PerfS21long)){
@@ -1123,7 +1274,6 @@ for (i in 1:nrow(PerfS21long)){
   }
 }
 
-
 PerfS21long <- assign_lengths(PerfS21long, W_S21Base1AB, W_S21Base2AB, W_S21Control3A, W_S21Exp3B, W_S21Control4A, W_S21Exp4B, W_S21Exp5A, W_S21Control5B, W_S21Exp6A, W_S21Control6B, "Baseline", "Text", "POE")
 
 
@@ -1131,10 +1281,21 @@ ggplot(data= data.frame(Type = c("Baseline - Control","Baseline - Experimental")
   geom_col(width = 0.6)+ labs(y="gain per minute", x = "Group",
               title = "Z-score gain per sentence (Baseline - Condition), Spring 2021")
 
-
 ggplot(data= data.frame(Type = c("Baseline - Control","Baseline - Experimental"), Avg = c(mean(subset(PerfS21long, condition == "Text")$word_diff_from_baseline), mean(subset(PerfS21long, condition == "POE")$word_diff_from_baseline))), aes(x=Type, y=Avg)) +
   geom_col(width = 0.6)+ labs(y="gain per minute", x = "Group",
               title = "Z-score gain per word (Baseline - Condition), Spring 2021")
+
+ggplot(data= data.frame(Type = c("Baseline", "Control","Experimental"), Avg = c(mean(subset(PerfS21long, condition == "Baseline")$word_gain_per_len), mean(subset(PerfS21long, condition == "Text")$word_gain_per_len), mean(subset(PerfS21long, condition == "POE")$word_gain_per_len))), aes(x=Type, y=Avg)) +
+  geom_col(width = 0.6)+ labs(y="gain per minute", x = "Group",
+              title = "Z-score gain per word, Spring 2021")
+
+mean(subset(PerfS21long, condition == "Text")$word_gain_per_len)
+mean(subset(PerfS21long, condition == "POE")$word_gain_per_len)
+
+mean(subset(PerfS21long, condition == "Text")$word_diff_from_baseline)
+mean(subset(PerfS21long, condition == "POE")$word_diff_from_baseline)
+
+
 
 summary(lm(word_diff_from_baseline ~ condition, data = subset(PerfS21long, condition!="Baseline")))
 
