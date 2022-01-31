@@ -309,7 +309,7 @@ ttestExtended(TimeS20, "POE", "Text")
 
 ## Performance 
 
-To prepare the data so that it becomes an acceptable df for the violin plots, we will transform the data from wide into long form. Also note that we're setting factor_key to TRUE in our gather function so that we can re-level our reference conditions in the later LMER tests.
+To prepare the data so that it becomes an acceptable df for the violin plots, we will transform the data from wide into long form. Also note that we are setting factor_key to TRUE in our gather function so that we can re-level our reference conditions in the later LMER tests.
 ```{r}
 gather_to_long <- function(df, cond1, cond2, cond3){
   keycol <- "condition"
