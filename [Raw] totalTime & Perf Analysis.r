@@ -740,7 +740,7 @@ t.test(PerfS20$control, PerfS20$experimental, paired = TRUE, alternative = "two.
 
 ## Data Analysis: Gain per minute
 
-Now we want to normalize performance by time to determine how much "performance" students earn for every minute in their condition. To do this, we will divide each student's z-score performance by the completion time
+Now we want to normalize performance by time to determine how much "performance" students earn for every minute in their condition. To do this, we will divide the z-score of each student performance by the completion time
 
 
 ```{r}
